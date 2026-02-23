@@ -25,6 +25,7 @@ const { isOpen, options, handleConfirm, handleCancel } = useConfirmState()
         <template #footer>
           <div class="flex justify-end gap-3">
             <UButton
+              v-if="!options.hideCancel"
               color="neutral"
               variant="ghost"
               @click="handleCancel"

@@ -4,6 +4,7 @@ export interface ConfirmOptions {
   confirmText?: string
   cancelText?: string
   variant?: 'primary' | 'danger'
+  hideCancel?: boolean
 }
 
 const isOpen = ref(false)
@@ -12,7 +13,8 @@ const options = ref<ConfirmOptions>({
   description: '',
   confirmText: '확인',
   cancelText: '취소',
-  variant: 'primary'
+  variant: 'primary',
+  hideCancel: false
 })
 
 let resolvePromise: (value: boolean) => void = () => {}

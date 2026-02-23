@@ -119,13 +119,13 @@ export const createUser = (body: Partial<User>) => {
 export const userKeys = {
   all: 'users',
   stats: 'user-stats',
+  detail: (id: number) => `${userKeys.all}-detail-${id}`,
 }
 
 export const useUsers = () => {
   const page = ref(1)
 
   // 핵심 데이터 (useAsyncData)
-  // - 페이지 이동을 멈추고 데이터를 다 가져온 후 화면을 전환합니다. (SEO 최적화)
   const { data: users, refresh: refreshUsers, error: errorUsers } = await useAsyncData(
     userKeys.all,
     () => fetchUsers(page.value),
@@ -133,7 +133,6 @@ export const useUsers = () => {
   )
 
   // 부가 데이터 (useLazyAsyncData)
-  // - 화면 이동을 막지 않고, 빈 화면(pending 상태)을 즉시 렌더링합니다. (UX 최적화)
   const { data: stats, status: statsStatus, error: errorStats } = await useLazyAsyncData(
     userKeys.stats,
     fetchUserStats
@@ -142,13 +141,14 @@ export const useUsers = () => {
   // 에러 처리
   // 컴포넌트에서 에러 UI를 처리하지 않고, 백그라운드에서 감지하여 Toast를 띄웁니다.
   watch([errorUsers, errorStats], ([errUsers, errStats]) => {
+    // Toast는 브라우저(Client)에서만 동작해야 하므로 환경을 체크합니다.
     if (import.meta.client) {
-      if (errUsers) useToast().add({ title: '유저 목록을 불러오지 못했습니다.', color: 'error' })
-      if (errStats) useToast().add({ title: '통계 데이터를 불러오지 못했습니다.', color: 'error' })
+      if (errUsers) useToast().add({ title: '유저 목록을 불러오지 못했습니다.', color: 'red' })
+      if (errStats) useToast().add({ title: '통계 데이터를 불러오지 못했습니다.', color: 'red' })
     }
-  }, { immediate: true })
+  }, { immediate: true }) // immediate: true로 초기 렌더링 시 발생한 에러도 즉시 잡습니다.
 
-  // 액션 로직 (생성 후 캐시 무효화)
+  // 액션 로직 (생성 후 캐시 무효화 및 에러 핸들링)
   const addUser = async (payload: Partial<User>) => {
     try {
       await createUser(payload)
@@ -159,6 +159,7 @@ export const useUsers = () => {
     }
   }
 
+  // errorUsers, errorStats를 더 이상 컴포넌트로 내보낼 필요가 없으므로 반환 객체에서 제거합니다.
   return { page, users, stats, statsStatus, addUser }
 }
 ```
@@ -168,24 +169,39 @@ export const useUsers = () => {
 
 ```html
 <script setup lang="ts">
-const { page, users, stats, statsStatus } = await useUsers()
+// page 상태를 컴포넌트에서 직접 변경하면 watch에 의해 자동으로 API가 재호출됩니다.
+const { page, users, errorUsers, stats, statsStatus, errorStats } = await useUsers()
 </script>
 
 <template>
   <div class="flex gap-8">
+    <!-- 1. 블로킹 데이터 (users) -->
     <section class="flex-1">
       <h2>핵심 유저 목록</h2>
-      <ul>
+
+      <!-- 에러 처리 방어 코드 추가 -->
+      <div v-if="errorUsers" class="text-red-500">유저 목록을 불러오지 못했습니다.</div>
+      <ul v-else>
         <li v-for="user in users" :key="user.id">{{ user.name }}</li>
       </ul>
-      <button @click="page++">다음 페이지</button>
+
+      <!-- 컴포넌트에서의 page 변수 조작 예시 -->
+      <button @click="page++" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
+        다음 페이지 (현재: {{ page }})
+      </button>
     </section>
 
+    <!-- 2. Lazy 데이터 (stats) -->
     <aside class="w-64">
       <div v-if="statsStatus === 'pending'" class="h-32 bg-gray-200 animate-pulse">
         통계 집계 중...
       </div>
+      <!-- 에러 처리 방어 코드 추가 -->
+      <div v-else-if="errorStats" class="text-red-500">
+        통계 데이터를 불러올 수 없습니다.
+      </div>
       <div v-else>
+        <!-- 데이터가 확실히 있을 때 접근하도록 Optional Chaining(?) 사용 -->
         전체 가입자: {{ stats?.totalCount }}명
       </div>
     </aside>
