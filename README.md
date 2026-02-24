@@ -167,7 +167,7 @@ export const useUsers = () => {
 **Step 3: 컴포넌트 렌더링 (`app/pages/*.vue`)**
 에러 처리가 Composable로 위임되었으므로, 컴포넌트는 오직 정상 데이터 렌더링에만 집중합니다.
 
-```html
+```vue
 <script setup lang="ts">
 // page 상태를 컴포넌트에서 직접 변경하면 watch에 의해 자동으로 API가 재호출됩니다.
 const { page, users, errorUsers, stats, statsStatus, errorStats } = await useUsers()
