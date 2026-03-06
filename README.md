@@ -6,7 +6,6 @@
 ## ✨ Key Features
 
 - **Architecture**:
-  - **FSD Lite**: 도메인 주도 설계를 위한 API 모듈화 및 Composable 패턴
   - **3-Layer Fetching**: `API Definition` -> `Composable (Blocking/Lazy)` -> `View Component`
 - **Developer Experience**:
   - **Nuxt 4 Compatibility**: `app/` 디렉토리 기반의 깔끔한 폴더 구조
@@ -23,7 +22,7 @@
 | **State** | [Pinia](https://pinia.vuejs.org/)                                               | Global State Management                   |
 | **Data Fetching** | Nuxt Data Fetching                                                              | `useAsyncData`, `useLazyAsyncData`        |
 | **HTTP** | [Ofetch](https://github.com/unjs/ofetch)                                        | Fetch API Wrapper (Nuxt 내장 `$fetch`)  |
-| **UI Components** | [Nuxt UI v3](https://ui.nuxt.com/)                                              | Native Vue Components                     |
+| **UI Components** | [Nuxt UI v4](https://ui.nuxt.com/)                                              | Native Vue Components                     |
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com/)                                     | Utility-first CSS framework               |
 | **Validation** | [Zod](https://zod.dev/)                                                         | Type-safe Schema Validation               |
 | **Utilities** | [VueUse](https://vueuse.org/), [Day.js](https://day.js.org/)                    | Essential Composition Utilities & Dates   |
@@ -138,16 +137,6 @@ export const useUsers = () => {
     fetchUserStats
   )
 
-  // 에러 처리
-  // 컴포넌트에서 에러 UI를 처리하지 않고, 백그라운드에서 감지하여 Toast를 띄웁니다.
-  watch([errorUsers, errorStats], ([errUsers, errStats]) => {
-    // Toast는 브라우저(Client)에서만 동작해야 하므로 환경을 체크합니다.
-    if (import.meta.client) {
-      if (errUsers) useToast().add({ title: '유저 목록을 불러오지 못했습니다.', color: 'red' })
-      if (errStats) useToast().add({ title: '통계 데이터를 불러오지 못했습니다.', color: 'red' })
-    }
-  }, { immediate: true }) // immediate: true로 초기 렌더링 시 발생한 에러도 즉시 잡습니다.
-
   // 액션 로직 (생성 후 캐시 무효화 및 에러 핸들링)
   const addUser = async (payload: Partial<User>) => {
     try {
@@ -159,8 +148,7 @@ export const useUsers = () => {
     }
   }
 
-  // errorUsers, errorStats를 더 이상 컴포넌트로 내보낼 필요가 없으므로 반환 객체에서 제거합니다.
-  return { page, users, stats, statsStatus, addUser }
+  return { page, users, errorUsers, stats, statsStatus, errorStats, addUser }
 }
 ```
 

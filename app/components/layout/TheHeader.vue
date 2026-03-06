@@ -23,7 +23,7 @@ const userMenuItems = [
     { label: '설정', icon: 'i-lucide-settings' }
   ],
   [
-    { label: '로그아웃', icon: 'i-lucide-log-out', onSelect: () => logout() }
+    { label: '로그아웃', icon: 'i-lucide-log-out', color: 'error', onSelect: () => logout() }
   ]
 ]
 
@@ -51,7 +51,10 @@ const logout = async () => {
     </div>
 
     <div class="flex items-center gap-4">
-      <UDropdownMenu :items="userMenuItems">
+      <UDropdownMenu
+        :items="userMenuItems"
+        :modal="false"
+      >
         <div class="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 cursor-pointer min-w-32">
           <div class="h-8 w-8 shrink-0 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-xs">
             JS

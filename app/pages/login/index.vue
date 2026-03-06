@@ -21,8 +21,8 @@ const schema = z.object({
 })
 
 const state = ref({
-  email: savedEmail.value || '',
-  password: '',
+  email: savedEmail.value || 'admin@example.com',
+  password: '1234',
   rememberMe: !!savedEmail.value
 })
 

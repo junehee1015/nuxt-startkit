@@ -6,42 +6,34 @@ const { isOpen, options, handleConfirm, handleCancel } = useConfirmState()
   <UModal
     v-model:open="isOpen"
     :dismissible="false"
+    :title="options.title"
+    :description="options.description"
   >
-    <template #content>
-      <UCard class="ring-0 divide-y divide-gray-100">
-        <template #header>
-          <h3 class="text-lg font-semibold leading-6 text-gray-900">
-            {{ options.title }}
-          </h3>
-        </template>
+    <template
+      v-if="!options.description"
+      #description
+    >
+      <span class="sr-only">추가 설명이 없습니다.</span>
+    </template>
 
-        <p
-          v-if="options.description"
-          class="text-sm text-gray-500"
+    <template #footer>
+      <div class="flex w-full justify-end gap-3">
+        <UButton
+          v-if="!options.hideCancel"
+          color="neutral"
+          variant="ghost"
+          @click="handleCancel"
         >
-          {{ options.description }}
-        </p>
+          {{ options.cancelText }}
+        </UButton>
 
-        <template #footer>
-          <div class="flex justify-end gap-3">
-            <UButton
-              v-if="!options.hideCancel"
-              color="neutral"
-              variant="ghost"
-              @click="handleCancel"
-            >
-              {{ options.cancelText }}
-            </UButton>
-
-            <UButton
-              :color="options.variant === 'danger' ? 'error' : 'primary'"
-              @click="handleConfirm"
-            >
-              {{ options.confirmText }}
-            </UButton>
-          </div>
-        </template>
-      </UCard>
+        <UButton
+          :color="options.variant === 'danger' ? 'error' : 'primary'"
+          @click="handleConfirm"
+        >
+          {{ options.confirmText }}
+        </UButton>
+      </div>
     </template>
   </UModal>
 </template>

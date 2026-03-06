@@ -51,3 +51,12 @@ export const useConfirm = (userOptions: ConfirmOptions): Promise<boolean> => {
     resolvePromise = resolve
   })
 }
+
+export const useAlert = (
+  userOptions: Omit<ConfirmOptions, 'hideCancel' | 'cancelText'>
+): Promise<boolean> => {
+  return useConfirm({
+    ...userOptions,
+    hideCancel: true
+  })
+}

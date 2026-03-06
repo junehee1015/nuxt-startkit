@@ -57,7 +57,7 @@
       </div>
       <p class="text-gray-600 text-sm">
         캐시 키(Key Factory)는 비즈니스 로직(useAsyncData)이 위치한 곳과 <strong>코로케이션(Co-location)</strong> 하여 응집도를 높입니다.<br>
-        <strong>🔥 중요 전략:</strong> 핵심/SEO 데이터는 <code>useAsyncData</code>로 블로킹하고, 무거운 부가 데이터는 <code>useLazyAsyncData</code>를 사용합니다.
+        SEO 데이터는 <code>useAsyncData</code>로 블로킹하고, 무거운 부가 데이터는 <code>useLazyAsyncData</code>를 사용합니다.
       </p>
 
       <div class="bg-[#1e1e1e] rounded-lg shadow-xl border border-gray-800 font-mono text-sm">
@@ -93,16 +93,6 @@
     <span class="text-[#dcdcaa]">fetchUserStats</span>
   )
 
-  <span class="text-[#6a9955]">// 🚨 [추가된 에러 공통 처리 로직] </span>
-  <span class="text-[#6a9955]">// 컴포넌트에서 에러 UI를 처리하지 않고, 백그라운드에서 감지하여 Toast를 띄웁니다.</span>
-  <span class="text-[#dcdcaa]">watch</span>([<span class="text-[#4fc1ff]">errorUsers</span>, <span class="text-[#4fc1ff]">errorStats</span>], ([<span class="text-[#9cdcfe]">errUsers</span>, <span class="text-[#9cdcfe]">errStats</span>]) <span class="text-[#569cd6]">=&gt;</span> {
-    <span class="text-[#6a9955]">// Toast는 브라우저(Client)에서만 동작해야 하므로 환경을 체크합니다.</span>
-    <span class="text-[#c586c0]">if</span> (<span class="text-[#c586c0]">import</span>.<span class="text-[#9cdcfe]">meta</span>.<span class="text-[#9cdcfe]">client</span>) {
-      <span class="text-[#c586c0]">if</span> (<span class="text-[#9cdcfe]">errUsers</span>) <span class="text-[#dcdcaa]">useToast</span>().<span class="text-[#dcdcaa]">add</span>({ <span class="text-[#9cdcfe]">title</span>: <span class="text-[#ce9178]">'유저 목록을 불러오지 못했습니다.'</span>, <span class="text-[#9cdcfe]">color</span>: <span class="text-[#ce9178]">'red'</span> })
-      <span class="text-[#c586c0]">if</span> (<span class="text-[#9cdcfe]">errStats</span>) <span class="text-[#dcdcaa]">useToast</span>().<span class="text-[#dcdcaa]">add</span>({ <span class="text-[#9cdcfe]">title</span>: <span class="text-[#ce9178]">'통계 데이터를 불러오지 못했습니다.'</span>, <span class="text-[#9cdcfe]">color</span>: <span class="text-[#ce9178]">'red'</span> })
-    }
-  }, { <span class="text-[#9cdcfe]">immediate</span>: <span class="text-[#569cd6]">true</span> }) <span class="text-[#6a9955]">// immediate: true로 초기 렌더링 시 발생한 에러도 즉시 잡습니다.</span>
-
   <span class="text-[#6a9955]">// 액션 로직 (생성 후 캐시 무효화 및 에러 핸들링)</span>
   <span class="text-[#569cd6]">const</span> <span class="text-[#dcdcaa]">addUser</span> = <span class="text-[#c586c0]">async</span> (<span class="text-[#9cdcfe]">payload</span>: <span class="text-[#4ec9b0]">Partial</span><span class="text-[#c586c0]">&lt;</span><span class="text-[#4ec9b0]">User</span><span class="text-[#c586c0]">&gt;</span>) <span class="text-[#569cd6]">=&gt;</span> {
     <span class="text-[#c586c0]">try</span> {
@@ -114,8 +104,7 @@
     }
   }
 
-  <span class="text-[#6a9955]">// errorUsers, errorStats를 더 이상 컴포넌트로 내보낼 필요가 없으므로 반환 객체에서 제거합니다.</span>
-  <span class="text-[#c586c0]">return</span> { <span class="text-[#4fc1ff]">page</span>, <span class="text-[#4fc1ff]">users</span>, <span class="text-[#4fc1ff]">stats</span>, <span class="text-[#4fc1ff]">statsStatus</span>, <span class="text-[#dcdcaa]">addUser</span> }
+  <span class="text-[#c586c0]">return</span> { <span class="text-[#4fc1ff]">page</span>, <span class="text-[#4fc1ff]">users</span>, <span class="text-[#4fc1ff]">errorUsers</span>, <span class="text-[#4fc1ff]">stats</span>, <span class="text-[#4fc1ff]">statsStatus</span>, <span class="text-[#4fc1ff]">errorStats</span>, <span class="text-[#dcdcaa]">addUser</span> }
 }</code></pre>
       </div>
     </section>
