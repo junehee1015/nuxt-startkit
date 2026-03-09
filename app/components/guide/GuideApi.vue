@@ -5,8 +5,8 @@
         API & Data Fetching 아키텍처 (Nuxt)
       </h2>
       <p class="mt-2 text-gray-600">
-        본 스타트킷은 <strong>Key Factory Pattern</strong>과 <strong>Composable 비즈니스 로직 분리</strong>를 통해<br>
-        유지보수가 극대화된 데이터 패칭 구조를 지향합니다.
+        본 스타터킷은 <strong>Key Factory Pattern</strong>과 <strong>Composable 비즈니스 로직 분리</strong>를 통해 유지보수성을 극대화합니다.<br>
+        <code class="bg-gray-100 px-1 rounded text-red-500">401 에러</code> 발생 시 컴포넌트 모르게 <strong>투명하게 토큰을 갱신하고 재요청</strong>하는 api 인스턴스가 내장되어 있습니다.
       </p>
     </div>
 
@@ -18,7 +18,8 @@
         </h3>
       </div>
       <p class="text-gray-600 text-sm">
-        이 계층은 오직 네트워크 요청만 담당합니다. 쿼리 파라미터는 <code>query</code> 옵션을 활용합니다.
+        이 계층은 오직 네트워크 요청만 담당하며, 상태(Ref)를 가지지 않는 순수 Promise를 반환해야 합니다.<br>
+        플러그인에 주입된 순수 비동기 래퍼인 <code>useNuxtApp().$api</code>를 사용합니다.
       </p>
 
       <div class="bg-[#1e1e1e] rounded-lg shadow-xl border border-gray-800 font-mono text-sm">
@@ -34,13 +35,13 @@
           v-pre
           class="p-4 overflow-x-auto leading-relaxed text-[#d4d4d4]"
         ><code><span class="text-[#c586c0]">export</span> <span class="text-[#569cd6]">const</span> <span class="text-[#dcdcaa]">fetchUsers</span> = (<span class="text-[#9cdcfe]">page</span>: <span class="text-[#4ec9b0]">number</span>) <span class="text-[#569cd6]">=&gt;</span> {
-  <span class="text-[#c586c0]">return</span> <span class="text-[#dcdcaa]">useApi</span>&lt;<span class="text-[#4ec9b0]">User</span>[]&gt;(<span class="text-[#ce9178]">'/users'</span>, {
+  <span class="text-[#c586c0]">return</span> <span class="text-[#dcdcaa]">useNuxtApp</span>().<span class="text-[#9cdcfe]">$api</span>&lt;<span class="text-[#4ec9b0]">User</span>[]&gt;(<span class="text-[#ce9178]">'/users'</span>, {
     <span class="text-[#9cdcfe]">query</span>: { <span class="text-[#9cdcfe]">page</span> }
   })
 }
 
 <span class="text-[#c586c0]">export</span> <span class="text-[#569cd6]">const</span> <span class="text-[#dcdcaa]">createUser</span> = (<span class="text-[#9cdcfe]">body</span>: <span class="text-[#4ec9b0]">Partial</span>&lt;<span class="text-[#4ec9b0]">User</span>&gt;) <span class="text-[#569cd6]">=&gt;</span> {
-  <span class="text-[#c586c0]">return</span> <span class="text-[#dcdcaa]">useApi</span>&lt;<span class="text-[#4ec9b0]">User</span>&gt;(<span class="text-[#ce9178]">'/users'</span>, {
+  <span class="text-[#c586c0]">return</span> <span class="text-[#dcdcaa]">useNuxtApp</span>().<span class="text-[#9cdcfe]">$api</span>&lt;<span class="text-[#4ec9b0]">User</span>&gt;(<span class="text-[#ce9178]">'/users'</span>, {
     <span class="text-[#9cdcfe]">method</span>: <span class="text-[#ce9178]">'POST'</span>,
     <span class="text-[#9cdcfe]">body</span>,
   })
@@ -57,7 +58,7 @@
       </div>
       <p class="text-gray-600 text-sm">
         캐시 키(Key Factory)는 비즈니스 로직(useAsyncData)이 위치한 곳과 <strong>코로케이션(Co-location)</strong> 하여 응집도를 높입니다.<br>
-        SEO 데이터는 <code>useAsyncData</code>로 블로킹하고, 무거운 부가 데이터는 <code>useLazyAsyncData</code>를 사용합니다.
+        핵심 데이터는 <code>useAsyncData</code>로 블로킹하고, 무거운 부가 데이터는 <code>useLazyAsyncData</code>를 사용합니다.
       </p>
 
       <div class="bg-[#1e1e1e] rounded-lg shadow-xl border border-gray-800 font-mono text-sm">
@@ -70,7 +71,7 @@
         <pre
           v-pre
           class="p-4 overflow-x-auto leading-relaxed text-[#d4d4d4]"
-        ><code><span class="text-[#6a9955]">// Key Factory Pattern (캐시 키 중앙 관리 - Composable과 Co-location)</span>
+        ><code><span class="text-[#6a9955]">// Key Factory Pattern (캐시 키 중앙 관리)</span>
 <span class="text-[#c586c0]">export</span> <span class="text-[#569cd6]">const</span> <span class="text-[#4fc1ff]">userKeys</span> = {
   <span class="text-[#9cdcfe]">all</span>: <span class="text-[#ce9178]">'users'</span>,
   <span class="text-[#9cdcfe]">stats</span>: <span class="text-[#ce9178]">'user-stats'</span>,
@@ -80,25 +81,24 @@
 <span class="text-[#c586c0]">export</span> <span class="text-[#569cd6]">const</span> <span class="text-[#dcdcaa]">useUsers</span> = () <span class="text-[#569cd6]">=&gt;</span> {
   <span class="text-[#569cd6]">const</span> <span class="text-[#4fc1ff]">page</span> = <span class="text-[#dcdcaa]">ref</span>(<span class="text-[#b5cea8]">1</span>)
 
-  <span class="text-[#6a9955]">// 핵심 데이터 (useAsyncData)</span>
+  <span class="text-[#6a9955]">// 핵심 데이터 (STEP 1의 순수 API 함수 호출)</span>
   <span class="text-[#569cd6]">const</span> { <span class="text-[#9cdcfe]">data</span>: <span class="text-[#4fc1ff]">users</span>, <span class="text-[#9cdcfe]">refresh</span>: <span class="text-[#4fc1ff]">refreshUsers</span>, <span class="text-[#9cdcfe]">error</span>: <span class="text-[#4fc1ff]">errorUsers</span> } = <span class="text-[#c586c0]">await</span> <span class="text-[#dcdcaa]">useAsyncData</span>(
     <span class="text-[#4fc1ff]">userKeys</span>.<span class="text-[#9cdcfe]">all</span>,
     () <span class="text-[#569cd6]">=&gt;</span> <span class="text-[#dcdcaa]">fetchUsers</span>(<span class="text-[#4fc1ff]">page</span>.value),
     { <span class="text-[#9cdcfe]">watch</span>: [<span class="text-[#4fc1ff]">page</span>] }
   )
 
-  <span class="text-[#6a9955]">// 부가 데이터 (useLazyAsyncData)</span>
+  <span class="text-[#6a9955]">// 부가 데이터 (비차단 렌더링)</span>
   <span class="text-[#569cd6]">const</span> { <span class="text-[#9cdcfe]">data</span>: <span class="text-[#4fc1ff]">stats</span>, <span class="text-[#9cdcfe]">status</span>: <span class="text-[#4fc1ff]">statsStatus</span>, <span class="text-[#9cdcfe]">error</span>: <span class="text-[#4fc1ff]">errorStats</span> } = <span class="text-[#c586c0]">await</span> <span class="text-[#dcdcaa]">useLazyAsyncData</span>(
     <span class="text-[#4fc1ff]">userKeys</span>.<span class="text-[#9cdcfe]">stats</span>,
     <span class="text-[#dcdcaa]">fetchUserStats</span>
   )
 
-  <span class="text-[#6a9955]">// 액션 로직 (생성 후 캐시 무효화 및 에러 핸들링)</span>
   <span class="text-[#569cd6]">const</span> <span class="text-[#dcdcaa]">addUser</span> = <span class="text-[#c586c0]">async</span> (<span class="text-[#9cdcfe]">payload</span>: <span class="text-[#4ec9b0]">Partial</span><span class="text-[#c586c0]">&lt;</span><span class="text-[#4ec9b0]">User</span><span class="text-[#c586c0]">&gt;</span>) <span class="text-[#569cd6]">=&gt;</span> {
     <span class="text-[#c586c0]">try</span> {
       <span class="text-[#c586c0]">await</span> <span class="text-[#dcdcaa]">createUser</span>(<span class="text-[#9cdcfe]">payload</span>)
       <span class="text-[#dcdcaa]">clearNuxtData</span>(<span class="text-[#4fc1ff]">userKeys</span>.<span class="text-[#9cdcfe]">all</span>) <span class="text-[#6a9955]">// 캐시 삭제</span>
-      <span class="text-[#c586c0]">await</span> <span class="text-[#dcdcaa]">refreshUsers</span>() <span class="text-[#6a9955]">// 수동으로 데이터 다시 가져오기</span>
+      <span class="text-[#c586c0]">await</span> <span class="text-[#dcdcaa]">refreshUsers</span>() <span class="text-[#6a9955]">// 데이터 리프레시</span>
     } <span class="text-[#c586c0]">catch</span> (<span class="text-[#9cdcfe]">error</span>) {
       <span class="text-[#c586c0]">throw</span> <span class="text-[#9cdcfe]">error</span>
     }

@@ -1,0 +1,66 @@
+import { defineNuxtPlugin, useRuntimeConfig, navigateTo, useRoute } from '#app'
+import type { FetchError } from 'ofetch'
+
+type FetchRequest = Parameters<typeof $fetch>[0]
+type FetchOptions = Parameters<typeof $fetch>[1]
+
+export default defineNuxtPlugin((nuxtApp) => {
+  const config = useRuntimeConfig()
+  const authStore = useAuthStore()
+  let refreshPromise: Promise<void> | null = null
+
+  const _apiInstance = $fetch.create({
+    baseURL: config.public.api as string,
+    onRequest({ options }) {
+      if (authStore.accessToken) {
+        options.headers = new Headers(options.headers)
+        options.headers.set('Authorization', `Bearer ${authStore.accessToken}`)
+      }
+    }
+  })
+
+  const api = async <T = unknown>(request: FetchRequest, options?: FetchOptions): Promise<T> => {
+    try {
+      return await _apiInstance<T>(request, options)
+    } catch (e: unknown) {
+      const error = e as FetchError
+
+      const isAuthPath = request.toString().includes('/login') || request.toString().includes('/refresh')
+
+      if (error.response?.status === 401 && !isAuthPath) {
+        if (import.meta.server) throw error
+
+        if (!refreshPromise) {
+          refreshPromise = authStore.refreshAccessToken().finally(() => {
+            refreshPromise = null
+          })
+        }
+
+        try {
+          await refreshPromise
+
+          return await _apiInstance<T>(request, options)
+        } catch (refreshError) {
+          authStore.logout()
+
+          await nuxtApp.runWithContext(async () => {
+            const route = useRoute()
+            if (route.path !== '/login') {
+              await navigateTo('/login', { replace: true })
+            }
+          })
+
+          throw refreshError
+        }
+      }
+
+      throw error
+    }
+  }
+
+  return {
+    provide: {
+      api
+    }
+  }
+})

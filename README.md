@@ -94,13 +94,13 @@ pnpm run build
 ```typescript
 // app/api/users.ts
 export const fetchUsers = (page: number) => {
-  return useApi<User[]>('/users', {
+  return useNuxtApp().$api<User[]>('/users', {
     query: { page }
   })
 }
 
 export const createUser = (body: Partial<User>) => {
-  return useApi<User>('/users', {
+  return useNuxtApp().$api<User>('/users', {
     method: 'POST',
     body,
   })
