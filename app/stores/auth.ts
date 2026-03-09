@@ -43,7 +43,17 @@ export const useAuthStore = defineStore('auth', () => {
     if (!refreshToken.value) throw new Error('No refresh token')
 
     try {
-      // 실제 구현은 useRefreshApi(순수 instance)를 사용합니다.
+      // 실제 구현은 순수 instance를 사용합니다.
+      // const config = useRuntimeConfig()
+
+      // const response = await $fetch<{ accessToken: string }>('/refresh', {
+      //   baseURL: config.public.api as string,
+      //   method: 'POST',
+      //   body: {
+      //     refreshToken: refreshToken.value
+      //   }
+      // })
+
       await new Promise(resolve => setTimeout(resolve, 300))
       accessToken.value = 'new-access-token-' + Date.now()
     } catch (error) {

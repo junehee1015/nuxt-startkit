@@ -224,7 +224,7 @@ definePageMeta({
 | :-------------------- | :--------- | :---------------------------------- |
 | **Component File** | PascalCase | `ConfirmDialog.vue`, `UserProfile.vue`|
 | **Page File** | kebab-case | `index.vue`, `[id].vue`             |
-| **Composable** | camelCase  | `useUsers.ts`, `useApi.ts`          |
+| **Composable** | camelCase  | `useUsers.ts`, `useConfirm.ts`          |
 | **API Module** | camelCase  | `users.ts`, `auth.ts`               |
 | **Variable/Function** | camelCase  | `handleSubmit`, `isLoading`         |
 | **Interface/Type** | PascalCase | `User`, `LoginPayload`              |

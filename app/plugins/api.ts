@@ -25,7 +25,8 @@ export default defineNuxtPlugin((nuxtApp) => {
     } catch (e: unknown) {
       const error = e as FetchError
 
-      const isAuthPath = request.toString().includes('/login') || request.toString().includes('/refresh')
+      const requestUrl = request instanceof Request ? request.url : request.toString()
+      const isAuthPath = requestUrl.includes('/login') || requestUrl.includes('/refresh')
 
       if (error.response?.status === 401 && !isAuthPath) {
         if (import.meta.server) throw error
