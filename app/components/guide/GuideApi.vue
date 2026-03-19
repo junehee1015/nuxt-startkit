@@ -113,63 +113,112 @@
       <div class="flex items-center gap-2">
         <span class="bg-indigo-100 text-indigo-700 font-bold px-2 py-1 rounded text-sm">STEP 3</span>
         <h3 class="text-xl font-bold text-gray-800">
-          UI 컴포넌트 렌더링
+          컴포넌트 렌더링 (Suspense & ErrorBoundary)
         </h3>
       </div>
       <p class="text-gray-600 text-sm">
-        컴포넌트는 오직 가져다 쓰고 렌더링하는 역할만 담당합니다.<br>
-        블로킹 데이터는 즉시 렌더링하고, Lazy 데이터는 <code>status</code>로 스켈레톤 UI를 처리합니다.
+        Vue 3의 <code>&lt;Suspense&gt;</code>와 Nuxt의 <code>&lt;NuxtErrorBoundary&gt;</code>를 조합하여,
+        <strong>로딩(Fallback)</strong>과 <strong>에러(Error)</strong> UI를 선언적으로 완벽하게 분리합니다.
       </p>
 
-      <div class="bg-[#1e1e1e] rounded-lg shadow-xl border border-gray-800 font-mono text-sm">
-        <div class="flex items-center px-4 py-2 bg-[#252526] border-b border-gray-800">
-          <div class="flex gap-1.5 mr-4">
-            <div class="w-3 h-3 rounded-full bg-[#ff5f56]" /><div class="w-3 h-3 rounded-full bg-[#ffbd2e]" /><div class="w-3 h-3 rounded-full bg-[#27c93f]" />
-          </div>
-          <span class="text-gray-400">app/pages/users/index.vue</span>
-        </div>
-        <pre
-          v-pre
-          class="p-4 overflow-x-auto leading-relaxed text-[#d4d4d4]"
-        ><code><span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">script</span> <span class="text-[#9cdcfe]">setup</span> <span class="text-[#9cdcfe]">lang</span>=<span class="text-[#ce9178]">"ts"</span><span class="text-[#808080]">&gt;</span>
-<span class="text-[#6a9955]">// page 상태를 컴포넌트에서 직접 변경하면 watch에 의해 자동으로 API가 재호출됩니다.</span>
-<span class="text-[#569cd6]">const</span> { <span class="text-[#4fc1ff]">page</span>, <span class="text-[#4fc1ff]">users</span>, <span class="text-[#4fc1ff]">errorUsers</span>, <span class="text-[#4fc1ff]">stats</span>, <span class="text-[#4fc1ff]">statsStatus</span>, <span class="text-[#4fc1ff]">errorStats</span> } = <span class="text-[#c586c0]">await</span> <span class="text-[#dcdcaa]">useUsers</span>()
+      <div class="mt-6">
+        <h4 class="text-lg font-bold text-gray-700 mb-2">
+          📌 Case A: 부모에게 위임 (NuxtErrorBoundary + Suspense 사용)
+        </h4>
+        <p class="text-sm text-gray-500 mb-4">
+          자식 컴포넌트는 오직 정상 데이터 렌더링에만 집중합니다. 로딩과 에러 복구(캐시 리셋 후 재요청)는 모두 부모가 책임집니다.
+        </p>
+        <div class="grid grid-cols-1 gap-6">
+          <div class="bg-[#1e1e1e] rounded-lg shadow-xl border border-gray-800 font-mono text-sm">
+            <div class="flex items-center px-4 py-2 bg-[#252526] border-b border-gray-800">
+              <span class="text-gray-400 font-bold">Child (Case A)</span>
+              <span class="text-gray-500 ml-2">| app/components/UserList.vue</span>
+            </div>
+            <pre
+              v-pre
+              class="p-4 overflow-x-auto leading-relaxed text-[#d4d4d4]"
+            ><code><span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">script</span> <span class="text-[#9cdcfe]">setup</span> <span class="text-[#9cdcfe]">lang</span>=<span class="text-[#ce9178]">"ts"</span><span class="text-[#808080]">&gt;</span>
+<span class="text-[#569cd6]">const</span> { <span class="text-[#4fc1ff]">users</span>, <span class="text-[#4fc1ff]">errorUsers</span> } = <span class="text-[#c586c0]">await</span> <span class="text-[#dcdcaa]">useUsers</span>()
+
+<span class="text-[#c586c0]">if</span> (<span class="text-[#4fc1ff]">errorUsers</span>.<span class="text-[#9cdcfe]">value</span>) <span class="text-[#c586c0]">throw</span> <span class="text-[#4fc1ff]">errorUsers</span>.<span class="text-[#9cdcfe]">value</span>
 <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">script</span><span class="text-[#808080]">&gt;</span>
 
 <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">template</span><span class="text-[#808080]">&gt;</span>
-  <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"flex gap-8"</span><span class="text-[#808080]">&gt;</span>
-    <span class="text-[#6a9955]">&lt;!-- 1. 블로킹 데이터 (users) --&gt;</span>
-    <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">section</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"flex-1"</span><span class="text-[#808080]">&gt;</span>
-      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">h2</span><span class="text-[#808080]">&gt;</span>핵심 유저 목록<span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">h2</span><span class="text-[#808080]">&gt;</span>
+  <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">ul</span><span class="text-[#808080]">&gt;</span>
+    <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">li</span> <span class="text-[#c586c0]">v-for</span>="<span class="text-[#4fc1ff]">user</span> <span class="text-[#569cd6]">in</span> <span class="text-[#4fc1ff]">users</span>" :<span class="text-[#9cdcfe]">key</span>="<span class="text-[#4fc1ff]">user</span>.<span class="text-[#9cdcfe]">id</span>"<span class="text-[#808080]">&gt;</span><span class="text-[#dcdcaa]">&#123;&#123;</span> <span class="text-[#4fc1ff]">user</span>.<span class="text-[#9cdcfe]">name</span> <span class="text-[#dcdcaa]">&#125;&#125;</span><span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">li</span><span class="text-[#808080]">&gt;</span>
+  <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">ul</span><span class="text-[#808080]">&gt;</span>
+<span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">template</span><span class="text-[#808080]">&gt;</span></code></pre>
+          </div>
 
-      <span class="text-[#6a9955]">&lt;!-- 에러 처리 방어 코드 추가 --&gt;</span>
-      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#c586c0]">v-if</span>="<span class="text-[#9cdcfe]">errorUsers</span>" <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"text-red-500"</span><span class="text-[#808080]">&gt;</span>유저 목록을 불러오지 못했습니다.<span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
-      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">ul</span> <span class="text-[#c586c0]">v-else</span><span class="text-[#808080]">&gt;</span>
-        <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">li</span> <span class="text-[#c586c0]">v-for</span>="<span class="text-[#4fc1ff]">user</span> <span class="text-[#569cd6]">in</span> <span class="text-[#9cdcfe]">users</span>" :<span class="text-[#9cdcfe]">key</span>="<span class="text-[#4fc1ff]">user</span>.<span class="text-[#9cdcfe]">id</span>"<span class="text-[#808080]">&gt;</span><span class="text-[#dcdcaa]">&#123;&#123;</span> <span class="text-[#4fc1ff]">user</span>.<span class="text-[#9cdcfe]">name</span> <span class="text-[#dcdcaa]">&#125;&#125;</span><span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">li</span><span class="text-[#808080]">&gt;</span>
-      <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">ul</span><span class="text-[#808080]">&gt;</span>
+          <div class="bg-[#1e1e1e] rounded-lg shadow-xl border border-gray-800 font-mono text-sm">
+            <div class="flex items-center px-4 py-2 bg-[#252526] border-b border-gray-800">
+              <span class="text-gray-400 font-bold">Parent Page</span>
+              <span class="text-gray-500 ml-2">| app/pages/users/index.vue</span>
+            </div>
+            <pre
+              v-pre
+              class="p-4 overflow-x-auto leading-relaxed text-[#d4d4d4]"
+            ><code><span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">script</span> <span class="text-[#9cdcfe]">setup</span> <span class="text-[#9cdcfe]">lang</span>=<span class="text-[#ce9178]">"ts"</span><span class="text-[#808080]">&gt;</span>
+<span class="text-[#569cd6]">const</span> <span class="text-[#dcdcaa]">handleRetry</span> = (<span class="text-[#9cdcfe]">clearError</span>: () <span class="text-[#569cd6]">=&gt;</span> <span class="text-[#4ec9b0]">void</span>) <span class="text-[#569cd6]">=&gt;</span> {
+  <span class="text-[#dcdcaa]">clearNuxtData</span>(<span class="text-[#4fc1ff]">userKeys</span>.<span class="text-[#9cdcfe]">all</span>)
+  <span class="text-[#dcdcaa]">clearError</span>()
+}
+<span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">script</span><span class="text-[#808080]">&gt;</span>
 
-      <span class="text-[#6a9955]">&lt;!-- 컴포넌트에서의 page 변수 조작 예시 --&gt;</span>
-      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">button</span> <span class="text-[#c586c0]">@click</span>="<span class="text-[#9cdcfe]">page</span>++" <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"mt-4 px-4 py-2 bg-blue-500 text-white rounded"</span><span class="text-[#808080]">&gt;</span>
-        다음 페이지 (현재: <span class="text-[#dcdcaa]">&#123;&#123;</span> <span class="text-[#4fc1ff]">page</span> <span class="text-[#dcdcaa]">&#125;&#125;</span>)
-      <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">button</span><span class="text-[#808080]">&gt;</span>
-    <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">section</span><span class="text-[#808080]">&gt;</span>
+<span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">template</span><span class="text-[#808080]">&gt;</span>
+  <span class="text-[#808080]">&lt;</span><span class="text-[#4ec9b0]">NuxtErrorBoundary</span><span class="text-[#808080]">&gt;</span>
+    <span class="text-[#808080]">&lt;</span><span class="text-[#4ec9b0]">Suspense</span><span class="text-[#808080]">&gt;</span>
+      <span class="text-[#808080]">&lt;</span><span class="text-[#4ec9b0]">UserList</span> <span class="text-[#808080]">/&gt;</span>
+      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">template</span> #<span class="text-[#9cdcfe]">fallback</span><span class="text-[#808080]">&gt;</span>
+        <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"text-blue-500 animate-pulse"</span><span class="text-[#808080]">&gt;</span>로딩 중...<span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
+      <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">template</span><span class="text-[#808080]">&gt;</span>
+    <span class="text-[#808080]">&lt;/</span><span class="text-[#4ec9b0]">Suspense</span><span class="text-[#808080]">&gt;</span>
+    <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">template</span> #<span class="text-[#9cdcfe]">error</span>="<span class="text-[#dcdcaa]">{</span> <span class="text-[#9cdcfe]">error</span>, <span class="text-[#9cdcfe]">clearError</span> <span class="text-[#dcdcaa]">}</span>"<span class="text-[#808080]">&gt;</span>
+      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"text-red-500"</span><span class="text-[#808080]">&gt;</span>
+        에러 발생: <span class="text-[#dcdcaa]">&#123;&#123;</span> <span class="text-[#9cdcfe]">error</span>.<span class="text-[#9cdcfe]">message</span> <span class="text-[#dcdcaa]">&#125;&#125;</span>
+        <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">button</span> @<span class="text-[#9cdcfe]">click</span>="<span class="text-[#dcdcaa]">handleRetry</span>(<span class="text-[#9cdcfe]">clearError</span>)" <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"underline ml-2"</span><span class="text-[#808080]">&gt;</span>다시 시도<span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">button</span><span class="text-[#808080]">&gt;</span>
+      <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
+    <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">template</span><span class="text-[#808080]">&gt;</span>
+  <span class="text-[#808080]">&lt;/</span><span class="text-[#4ec9b0]">NuxtErrorBoundary</span><span class="text-[#808080]">&gt;</span>
+<span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">template</span><span class="text-[#808080]">&gt;</span></code></pre>
+          </div>
+        </div>
+      </div>
 
-    <span class="text-[#6a9955]">&lt;!-- 2. Lazy 데이터 (stats) --&gt;</span>
-    <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">aside</span> <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"w-64"</span><span class="text-[#808080]">&gt;</span>
-      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#c586c0]">v-if</span>="<span class="text-[#9cdcfe]">statsStatus</span> === <span class="text-[#ce9178]">'pending'</span>" <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"h-32 bg-gray-200 animate-pulse"</span><span class="text-[#808080]">&gt;</span>
-        통계 집계 중...
-      <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
-      <span class="text-[#6a9955]">&lt;!-- 에러 처리 방어 코드 추가 --&gt;</span>
-      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#c586c0]">v-else-if</span>="<span class="text-[#9cdcfe]">errorStats</span>" <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"text-red-500"</span><span class="text-[#808080]">&gt;</span>
-        통계 데이터를 불러올 수 없습니다.
-      <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
-      <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#c586c0]">v-else</span><span class="text-[#808080]">&gt;</span>
-        <span class="text-[#6a9955]">&lt;!-- 데이터가 확실히 있을 때 접근하도록 Optional Chaining(?) 사용 --&gt;</span>
-        전체 가입자: <span class="text-[#dcdcaa]">&#123;&#123;</span> <span class="text-[#4fc1ff]">stats</span>?.<span class="text-[#9cdcfe]">totalCount</span> <span class="text-[#dcdcaa]">&#125;&#125;</span>명
-      <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
-    <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">aside</span><span class="text-[#808080]">&gt;</span>
+      <div class="mt-10">
+        <h4 class="text-lg font-bold text-gray-700 mb-2">
+          📌 Case B: 자식 내부에서 직접 처리 (Lazy Data)
+        </h4>
+        <p class="text-sm text-gray-500 mb-4">
+          사이드바 위젯처럼 실패해도 페이지 전체가 깨지면 안 되는 경우, <strong>컴포저블이 반환한 상태</strong>를 활용해
+          자체 스켈레톤 및 에러 UI를 그립니다. (이 경우 부모의 Suspense나 ErrorBoundary에 의존하지 않습니다.)
+        </p>
+        <div class="bg-[#1e1e1e] rounded-lg shadow-xl border border-gray-800 font-mono text-sm">
+          <div class="flex items-center px-4 py-2 bg-[#252526] border-b border-gray-800">
+            <span class="text-gray-400 font-bold">Child (Case B)</span>
+            <span class="text-gray-500 ml-2">| app/components/UserStats.vue</span>
+          </div>
+          <pre
+            v-pre
+            class="p-4 overflow-x-auto leading-relaxed text-[#d4d4d4]"
+          ><code><span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">script</span> <span class="text-[#9cdcfe]">setup</span> <span class="text-[#9cdcfe]">lang</span>=<span class="text-[#ce9178]">"ts"</span><span class="text-[#808080]">&gt;</span>
+<span class="text-[#569cd6]">const</span> { <span class="text-[#4fc1ff]">stats</span>, <span class="text-[#4fc1ff]">statsStatus</span>, <span class="text-[#4fc1ff]">errorStats</span> } = <span class="text-[#c586c0]">await</span> <span class="text-[#dcdcaa]">useUsers</span>()
+<span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">script</span><span class="text-[#808080]">&gt;</span>
+
+<span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">template</span><span class="text-[#808080]">&gt;</span>
+  <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#c586c0]">v-if</span>="<span class="text-[#9cdcfe]">statsStatus</span> === <span class="text-[#ce9178]">'pending'</span>" <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"h-32 bg-gray-200 animate-pulse"</span><span class="text-[#808080]">&gt;</span>
+    통계 집계 중...
+  <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
+
+  <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#c586c0]">v-else-if</span>="<span class="text-[#9cdcfe]">errorStats</span>" <span class="text-[#9cdcfe]">class</span>=<span class="text-[#ce9178]">"text-red-500 text-sm"</span><span class="text-[#808080]">&gt;</span>
+    통계 정보를 불러올 수 없습니다.
+  <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
+
+  <span class="text-[#808080]">&lt;</span><span class="text-[#569cd6]">div</span> <span class="text-[#c586c0]">v-else</span><span class="text-[#808080]">&gt;</span>
+    전체 가입자: <span class="text-[#dcdcaa]">&#123;&#123;</span> <span class="text-[#4fc1ff]">stats</span>?.<span class="text-[#9cdcfe]">totalCount</span> <span class="text-[#dcdcaa]">&#125;&#125;</span>명
   <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">div</span><span class="text-[#808080]">&gt;</span>
 <span class="text-[#808080]">&lt;/</span><span class="text-[#569cd6]">template</span><span class="text-[#808080]">&gt;</span></code></pre>
+        </div>
       </div>
     </section>
   </div>
