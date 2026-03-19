@@ -9,7 +9,7 @@ definePageMeta({
 
 useSeoMeta({ title: '로그인' })
 
-const authStore = useAuthStore()
+const { login } = useAuth()
 const toast = useToast()
 
 const savedEmail = useCookie<string | null>('saved_email', { maxAge: 60 * 60 * 24 * 30 }) // 30일 유지
@@ -31,7 +31,7 @@ const isSubmitting = ref(false)
 const onSubmit = async () => {
   isSubmitting.value = true
   try {
-    await authStore.login({ email: state.value.email, password: state.value.password })
+    await login({ email: state.value.email, password: state.value.password })
 
     if (state.value.rememberMe) {
       savedEmail.value = state.value.email
