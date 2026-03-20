@@ -12,8 +12,14 @@ export const useAuth = () => {
   }
 
   const logout = async () => {
-    await $fetch('/api/auth/logout', { method: 'POST' })
-    authStore.clearAuthData()
+    try {
+      await $fetch('/api/auth/logout', { method: 'POST' })
+    } catch (error) {
+      console.error('Logout API failed, but forcing local logout', error)
+    } finally {
+      authStore.clearAuthData()
+      await navigateTo('/login', { replace: true })
+    }
   }
 
   return { login, logout }

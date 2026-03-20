@@ -1,4 +1,3 @@
-import { defineNuxtPlugin, useRuntimeConfig, navigateTo, useRoute } from '#app'
 import type { FetchError } from 'ofetch'
 
 type FetchRequest = Parameters<typeof $fetch>[0]
@@ -32,16 +31,19 @@ export default defineNuxtPlugin((nuxtApp) => {
   }
 
   const logout = async () => {
-    authStore.clearAuthData()
-
-    await $fetch('/api/auth/logout', { method: 'POST' })
-
-    await nuxtApp.runWithContext(async () => {
-      const route = useRoute()
-      if (route.path !== '/login') {
-        await navigateTo('/login', { replace: true })
-      }
-    })
+    try {
+      await $fetch('/api/auth/logout', { method: 'POST' })
+    } catch (error) {
+      console.error('Logout API failed, but forcing local logout', error)
+    } finally {
+      authStore.clearAuthData()
+      await nuxtApp.runWithContext(async () => {
+        const route = useRoute()
+        if (route.path !== '/login') {
+          await navigateTo('/login', { replace: true })
+        }
+      })
+    }
   }
 
   const api = async <T = unknown>(request: FetchRequest, options?: FetchOptions): Promise<T> => {
@@ -63,6 +65,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           return await _apiInstance<T>(request, options)
         } catch (refreshError) {
           await logout()
+
           throw refreshError
         }
       }
