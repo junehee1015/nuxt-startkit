@@ -18,7 +18,6 @@ export const useAuth = () => {
       console.error('Logout API failed, but forcing local logout', error)
     } finally {
       authStore.clearAuthData()
-      await navigateTo('/login', { replace: true })
     }
   }
 
