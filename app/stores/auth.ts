@@ -4,22 +4,11 @@ export interface User {
   role: string
 }
 
-export interface LoginPayload {
-  email: string
-  password: string
-}
-
 export const useAuthStore = defineStore('auth', () => {
-  const accessToken = useCookie<string | null>('accessToken', {
-    maxAge: 60 * 60,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
-  })
+  const accessToken = ref<string | null>(null)
   const user = ref<User | null>(null)
 
-  const isAuthenticated = computed(() => !!accessToken.value)
-
-  const setAuthData = (token: string, userData: User) => {
+  const setAuthData = (token: string, userData = user.value) => {
     accessToken.value = token
     user.value = userData
   }
@@ -32,7 +21,6 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     accessToken,
-    isAuthenticated,
     setAuthData,
     clearAuthData
   }

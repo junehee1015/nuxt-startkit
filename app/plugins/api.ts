@@ -8,10 +8,73 @@ export default defineNuxtPlugin((nuxtApp) => {
   const authStore = useAuthStore()
 
   let refreshPromise: Promise<void> | null = null
+  let logoutPromise: Promise<void> | null = null
 
-  const _apiInstance = $fetch.create({
-    baseURL: config.public.api as string,
+  const ssrCookie = useRequestHeaders(['cookie']).cookie
+
+  const refreshAccessToken = async () => {
+    if (refreshPromise) return refreshPromise
+
+    refreshPromise = (async () => {
+      const headers = new Headers()
+
+      if (import.meta.server && ssrCookie) {
+        headers.set('cookie', ssrCookie)
+      }
+
+      try {
+        const response = await $fetch<{ accessToken: string }>('/auth/refresh', {
+          // baseURL: config.public.apiUrl as string,
+          baseURL: config.public.mockUrl as string, // Mock URL
+          method: 'POST',
+          credentials: 'include',
+          headers
+        })
+
+        authStore.setAuthData(response.accessToken)
+      } finally {
+        refreshPromise = null
+      }
+    })()
+
+    return refreshPromise
+  }
+
+  const logout = async () => {
+    if (logoutPromise) return logoutPromise
+
+    logoutPromise = (async () => {
+      try {
+        await api('/auth/logout', { method: 'POST', credentials: 'include' })
+      } catch (error) {
+        console.error('Logout API failed, but forcing local logout', error)
+      } finally {
+        authStore.clearAuthData()
+      }
+    })()
+
+    return logoutPromise
+  }
+
+  const redirectToLogin = async () => {
+    try {
+      await nuxtApp.runWithContext(async () => {
+        if (useRoute().path !== '/login') await navigateTo('/login', { replace: true })
+      })
+    } catch {
+      location.href = '/login'
+    }
+  }
+
+  const _api = $fetch.create({
+    // baseURL: config.public.apiUrl as string,
+    baseURL: config.public.mockUrl as string, // Mock URL
     onRequest({ options }) {
+      if (import.meta.server && ssrCookie) {
+        options.headers = new Headers(options.headers)
+        options.headers.set('cookie', ssrCookie)
+      }
+
       if (authStore.accessToken) {
         options.headers = new Headers(options.headers)
         options.headers.set('Authorization', `Bearer ${authStore.accessToken}`)
@@ -19,36 +82,9 @@ export default defineNuxtPlugin((nuxtApp) => {
     }
   })
 
-  const refreshAccessToken = async () => {
-    try {
-      const { accessToken } = await $fetch<{ accessToken: string }>('/api/auth/refresh', {
-        method: 'POST'
-      })
-      authStore.accessToken = accessToken
-    } finally {
-      refreshPromise = null
-    }
-  }
-
-  const logout = async () => {
-    try {
-      await $fetch('/api/auth/logout', { method: 'POST' })
-    } catch (error) {
-      console.error('Logout API failed, but forcing local logout', error)
-    } finally {
-      authStore.clearAuthData()
-      await nuxtApp.runWithContext(async () => {
-        const route = useRoute()
-        if (route.path !== '/login') {
-          await navigateTo('/login', { replace: true })
-        }
-      })
-    }
-  }
-
   const api = async <T = unknown>(request: FetchRequest, options?: FetchOptions): Promise<T> => {
     try {
-      return await _apiInstance<T>(request, options)
+      return await _api<T>(request, options)
     } catch (e: unknown) {
       const error = e as FetchError
 
@@ -56,18 +92,18 @@ export default defineNuxtPlugin((nuxtApp) => {
       const isAuthPath = requestUrl.includes('/login') || requestUrl.includes('/refresh')
 
       if (error.response?.status === 401 && !isAuthPath) {
-        if (import.meta.server) throw error
-
-        if (!refreshPromise) refreshPromise = refreshAccessToken()
-
         try {
-          await refreshPromise
-          return await _apiInstance<T>(request, options)
+          await refreshAccessToken()
         } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError)
+
           await logout()
+          await redirectToLogin()
 
           throw refreshError
         }
+
+        return await _api<T>(request, options)
       }
 
       throw error
@@ -76,7 +112,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   return {
     provide: {
-      api
+      refreshAccessToken,
+      logout,
+      api: api as typeof $fetch
     }
   }
 })

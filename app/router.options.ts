@@ -1,42 +1,41 @@
 import type { RouterConfig } from '@nuxt/schema'
 
-// Vue Router의 내부 옵션을 오버라이딩합니다.
-export default <RouterConfig>{
-  // 라우트 매칭 동작 설정
-  // 파일 시스템 라우트 외에 커스텀 라우트를 추가하고 싶을 때 사용
-  routes: (_routes) => {
-    // 예: 랜딩 페이지를 별도 마케팅 페이지로 리다이렉트하거나
-    // 특정 패턴을 가로채는 로직을 여기에 작성할 수 있습니다.
-    return _routes
-  },
-
-  // Tailwind CSS 호환 설정
-  // 기본 'router-link-active' 대신 Tailwind 유틸리티와 충돌 없는 설정
+export default {
   linkActiveClass: 'nav-active',
   linkExactActiveClass: 'nav-exact-active',
 
-  // 스크롤 동작 제어 (Smooth Scrolling & Restore)
   scrollBehavior(to, from, savedPosition) {
-    // 브라우저 뒤로/앞으로 가기 시 저장된 위치로 복원
+    const nuxtApp = useNuxtApp()
+
+    // 1. 뒤로/앞으로 가기 시 브라우저가 기억하는 위치로 즉시 복원
     if (savedPosition) {
       return savedPosition
     }
 
-    // URL에 #hash가 있다면 해당 위치로 부드럽게 스크롤
+    // 2. 해시(#) 앵커 이동 시에만 부드러운 스크롤 적용 (헤더 높이 고려)
     if (to.hash) {
       return {
         el: to.hash,
         behavior: 'smooth',
-        top: 80 // 헤더 높이(Sticky Header)만큼 여백을 줌
+        top: 80 // Sticky 헤더를 위한 오프셋
       }
     }
 
-    // 페이지 이동 시 항상 최상단으로 이동 (기본 동작)
-    // 단, 쿼리 파라미터만 바뀌는 경우(필터링 등)는 스크롤 유지
-    if (to.path === from.path && to.query !== from.query) {
+    // 3. 페이지네이션/필터링 등 특정 쿼리 변경 시 스크롤 방지 로직 (Meta 태그 기반 위임)
+    // 전역으로 막지 않고, 개별 페이지 컴포넌트에서 `definePageMeta({ keepScroll: true })`로 제어하도록 설계
+    if (to.path === from.path && to.meta.keepScroll) {
       return
     }
 
-    return { top: 0, behavior: 'smooth' }
+    // 4. 일반 페이지 이동 (Nuxt Transition/Suspense 대응)
+    // 새로운 페이지의 DOM이 완전히 준비된 후 최상단으로 즉시이동시킵니다.
+    return new Promise((resolve) => {
+      nuxtApp.hook('page:finish', () => {
+        resolve({
+          top: 0,
+          behavior: 'auto'
+        })
+      })
+    })
   }
-}
+} satisfies RouterConfig

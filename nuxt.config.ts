@@ -1,16 +1,21 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+import z from 'zod'
+
+const envSchema = z.object({
+  NUXT_PUBLIC_API_URL: z.url('http://localhost:8080'),
+  NUXT_PUBLIC_MOCK_URL: z.string('/api')
+})
+envSchema.parse(process.env)
+
 export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt', 'dayjs-nuxt'],
 
   components: [
-    {
-      path: '~/components',
-      pathPrefix: false
-    }
+    { path: '~/components/common', pathPrefix: false },
+    { path: '~/components', pathPrefix: true }
   ],
   imports: {
     dirs: [
-      'api/**',
+      'composables/**',
       'constants/**'
     ]
   },
@@ -33,12 +38,15 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      api: process.env.NUXT_PUBLIC_API || 'http://localhost:8080/api'
+      apiUrl: process.env.NUXT_PUBLIC_API_URL,
+      mockUrl: process.env.NUXT_PUBLIC_MOCK_URL
     }
   },
 
   routeRules: {
-    '/': { prerender: true }
+    // '/admin/**': { ssr: false },      // CSR Only (백오피스 등에 적합)
+    // '/landing/**': { prerender: true }, // SSG (정적 랜딩 페이지에 적합)
+    // '/**': { isr: 60 } // ISR (60초마다 캐시 갱신, 블로그 등에 적합)
   },
 
   future: {
