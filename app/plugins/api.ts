@@ -40,30 +40,37 @@ export default defineNuxtPlugin((nuxtApp) => {
     return refreshPromise
   }
 
-  const logout = async () => {
-    if (logoutPromise) return logoutPromise
-
-    logoutPromise = (async () => {
-      try {
-        await api('/auth/logout', { method: 'POST', credentials: 'include' })
-      } catch (error) {
-        console.error('Logout API failed, but forcing local logout', error)
-      } finally {
-        authStore.clearAuthData()
-      }
-    })()
-
-    return logoutPromise
-  }
-
   const redirectToLogin = async () => {
     try {
       await nuxtApp.runWithContext(async () => {
         if (useRoute().path !== '/login') await navigateTo('/login', { replace: true })
       })
-    } catch {
-      location.href = '/login'
+    } catch (error) {
+      if (import.meta.server) throw error
+      if (import.meta.client) window.location.href = '/login'
     }
+  }
+
+  const logout = async () => {
+    if (logoutPromise) return logoutPromise
+
+    logoutPromise = (async () => {
+      try {
+        await _api('/auth/logout', { method: 'POST', credentials: 'include' })
+      } catch (error) {
+        console.error('Logout API failed, but forcing local logout', error)
+      } finally {
+        authStore.clearAuthData()
+        clearNuxtData()
+        await nextTick()
+        localStorage.removeItem('auth')
+
+        await redirectToLogin()
+        logoutPromise = null
+      }
+    })()
+
+    return logoutPromise
   }
 
   const _api = $fetch.create({
@@ -83,27 +90,27 @@ export default defineNuxtPlugin((nuxtApp) => {
   })
 
   const api = async <T = unknown>(request: FetchRequest, options?: FetchOptions): Promise<T> => {
+    const requestToPerform = request instanceof Request ? request.clone() : request
+
     try {
-      return await _api<T>(request, options)
+      return await _api<T>(requestToPerform, options)
     } catch (e: unknown) {
       const error = e as FetchError
 
       const requestUrl = request instanceof Request ? request.url : request.toString()
-      const isAuthPath = requestUrl.includes('/login') || requestUrl.includes('/refresh')
+      const isAuthPath = requestUrl.includes('/login') || requestUrl.includes('/logout') || requestUrl.includes('/refresh')
 
       if (error.response?.status === 401 && !isAuthPath) {
         try {
           await refreshAccessToken()
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError)
-
           await logout()
-          await redirectToLogin()
-
           throw refreshError
         }
 
-        return await _api<T>(request, options)
+        const retryRequest = request instanceof Request ? request.clone() : request
+        return await _api<T>(retryRequest, options)
       }
 
       throw error

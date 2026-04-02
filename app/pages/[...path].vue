@@ -1,8 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   name: 'not-found',
-  layout: 'empty',
-  requiresAuth: false
+  layout: 'empty'
 })
 
 useSeoMeta({

@@ -36,12 +36,12 @@
 ```text
 NUXT-STARTKIT/
 ├── app/
-│   ├── api/            # 순수 API 네트워크 통신 함수 (Auto-imported)
+│   ├── api/            # 순수 API 네트워크 통신 함수
 │   ├── components/     # 재사용 가능한 UI 컴포넌트
 │   ├── composables/    # 비즈니스 로직 & Data Fetching (Key Factory 코로케이션)
-│   ├── constants/      # 전역 상수 (routes.ts 등) (Auto-imported)
+│   ├── constants/      # 전역 상수 (routes.ts 등)
 │   ├── layouts/        # 전역 레이아웃 (default, empty)
-│   ├── middleware/     # 라우터 미들웨어 (auth.global.ts)
+│   ├── middleware/     # 네비게이션 가드 (auth.global.ts)
 │   ├── pages/          # 파일 기반 라우팅 페이지
 │   ├── stores/         # Pinia 전역 스토어
 │   ├── utils/          # 공통 유틸리티 함수
@@ -64,7 +64,8 @@ pnpm install
 루트 경로에 `.env` 파일을 생성하고 API 주소를 설정하세요.
 
 ```env
-NUXT_PUBLIC_API=http://localhost:8080/api
+NUXT_PUBLIC_API_URL=http://localhost:8080
+NUXT_PUBLIC_MOCK_URL=/api
 ```
 
 ### 3. 개발 서버 실행
@@ -86,13 +87,23 @@ pnpm run build
 
 ### 1. API & Data Fetching (3-Layer Pattern)
 
-데이터 흐름을 명확히 하기 위해 API 호출을 3단계로 분리합니다.
+데이터 흐름을 명확히 하고, 목적(GET vs Mutation)에 따라 `useApiFetch`, `$api`로 분리하여 3단계로 관리합니다.
+
+* **`useApiFetch`**: 화면 렌더링을 위한 **GET** 전용 Composable
+* **`$api`**: 사용자 액션에 의한 데이터 변경 **POST/PUT/DELETE** 전용 인스턴스
 
 **Step 1: API 통신 정의 (`app/api/*.ts`)**
 이 계층은 오직 네트워크 요청만 담당합니다.
 
 ```typescript
 // app/api/users.ts
+
+export interface User {
+  id: number
+  name: string
+  email: string
+}
+
 export const fetchUsers = (page: number) => {
   return useNuxtApp().$api<User[]>('/users', {
     query: { page }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
-const { logout } = useAuth()
+const { logout } = useLogout()
 const toast = useToast()
 
 const breadcrumbs = computed(() => {
@@ -19,7 +19,7 @@ const breadcrumbs = computed(() => {
 
 const userMenuItems = [
   [
-    { label: '프로필', icon: 'i-lucide-user', onSelect: () => alert('Profile') },
+    { label: '프로필', icon: 'i-lucide-user' },
     { label: '설정', icon: 'i-lucide-settings' }
   ],
   [
@@ -38,7 +38,6 @@ const excuteLogout = async () => {
   if (!isConfirmed) return
 
   await logout()
-  await navigateTo({ name: ROUTE_NAMES.LOGIN, replace: true })
 
   toast.add({ title: '로그아웃 되었습니다.', color: 'error', progress: false })
 }

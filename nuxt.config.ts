@@ -7,10 +7,11 @@ const envSchema = z.object({
 envSchema.parse(process.env)
 
 export default defineNuxtConfig({
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt', 'dayjs-nuxt'],
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt', 'dayjs-nuxt', 'pinia-plugin-persistedstate/nuxt'],
 
   components: [
     { path: '~/components/common', pathPrefix: false },
+    { path: '~/components/layout', pathPrefix: false },
     { path: '~/components', pathPrefix: true }
   ],
   imports: {

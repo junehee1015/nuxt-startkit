@@ -1,6 +1,17 @@
-import { loginApi } from '~/api/auth'
+interface LoginPayload {
+  email: string
+  password: string
+}
+
+interface LoginResponse {
+  accessToken: string
+  email: string
+  user: User
+}
 
 export const useLogin = () => {
+  const BASE_URL = import.meta.env.NUXT_PUBLIC_API_URL || '/api'
+
   const authStore = useAuthStore()
 
   const pending = ref(false)
@@ -9,7 +20,12 @@ export const useLogin = () => {
     pending.value = true
 
     try {
-      const response = await loginApi(loginPayload)
+      const response = await $fetch<LoginResponse>('/auth/login', {
+        baseURL: BASE_URL,
+        method: 'POST',
+        body: loginPayload
+      })
+
       authStore.setAuthData(response.accessToken, response.user)
     } finally {
       pending.value = false

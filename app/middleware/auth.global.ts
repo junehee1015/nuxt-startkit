@@ -1,9 +1,22 @@
-export default defineNuxtRouteMiddleware((to, _from) => {
+export default defineNuxtRouteMiddleware(async (to, _from) => {
   const authStore = useAuthStore()
-  const isPublic = to.meta.requiresAuth === false
-  const isAuthenticated = authStore.isAuthenticated
+  const { $refreshAccessToken } = useNuxtApp()
 
-  if (!isPublic && !isAuthenticated) {
+  if (!authStore.accessToken && authStore.user) {
+    try {
+      await $refreshAccessToken()
+    } catch {
+      authStore.clearAuthData()
+      clearNuxtData()
+      await nextTick()
+      localStorage.removeItem('auth')
+    }
+  }
+
+  const isAuthenticated = !!authStore.accessToken
+  const isPublic = to.meta.isPublic === true
+
+  if (!isAuthenticated && !isPublic) {
     return navigateTo({ name: ROUTE_NAMES.LOGIN })
   }
 

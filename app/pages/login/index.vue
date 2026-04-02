@@ -4,12 +4,12 @@ import { z } from 'zod'
 definePageMeta({
   name: 'login',
   layout: 'empty',
-  requiresAuth: false
+  isPublic: true
 })
 
 useSeoMeta({ title: '로그인' })
 
-const { login } = useAuth()
+const { login } = useLogin()
 const toast = useToast()
 
 const savedEmail = useCookie<string | null>('saved_email', { maxAge: 60 * 60 * 24 * 30 }) // 30일 유지
