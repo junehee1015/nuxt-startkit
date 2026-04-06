@@ -62,9 +62,6 @@ export default defineNuxtPlugin((nuxtApp) => {
       } finally {
         authStore.clearAuthData()
         clearNuxtData()
-        await nextTick()
-        localStorage.removeItem('auth')
-
         await redirectToLogin()
         logoutPromise = null
       }

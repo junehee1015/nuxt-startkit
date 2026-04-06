@@ -8,8 +8,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     } catch {
       authStore.clearAuthData()
       clearNuxtData()
-      await nextTick()
-      localStorage.removeItem('auth')
     }
   }
 
