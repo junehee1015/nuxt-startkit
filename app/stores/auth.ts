@@ -28,7 +28,11 @@ export const useAuthStore = defineStore(
     }
   }, {
     persist: {
-      pick: ['user']
+      pick: ['user'],
+      storage: piniaPluginPersistedstate.cookies({
+        maxAge: 60 * 60 * 24 * 30, // 30일 유지
+        sameSite: 'lax'
+      })
     }
   }
 )
