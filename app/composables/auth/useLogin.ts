@@ -10,7 +10,7 @@ interface LoginResponse {
 }
 
 export const useLogin = () => {
-  const BASE_URL = import.meta.env.NUXT_PUBLIC_API_URL || '/api'
+  const config = useRuntimeConfig()
 
   const authStore = useAuthStore()
 
@@ -21,7 +21,7 @@ export const useLogin = () => {
 
     try {
       const response = await $fetch<LoginResponse>('/auth/login', {
-        baseURL: BASE_URL,
+        baseURL: config.public.mockUrl,
         method: 'POST',
         body: loginPayload
       })

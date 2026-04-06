@@ -1,11 +1,3 @@
-import z from 'zod'
-
-const envSchema = z.object({
-  NUXT_PUBLIC_API_URL: z.url('http://localhost:8080'),
-  NUXT_PUBLIC_MOCK_URL: z.string('/api')
-})
-envSchema.parse(process.env)
-
 export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt', 'dayjs-nuxt', 'pinia-plugin-persistedstate/nuxt'],
 
@@ -39,8 +31,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiUrl: process.env.NUXT_PUBLIC_API_URL,
-      mockUrl: process.env.NUXT_PUBLIC_MOCK_URL
+      apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:8080',
+      mockUrl: process.env.NUXT_PUBLIC_MOCK_URL || '/api'
     }
   },
 
