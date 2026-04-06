@@ -5,8 +5,6 @@
 
 ## ✨ Key Features
 
-- **Architecture**:
-  - **3-Layer Fetching**: `API Definition` -> `Composable (Blocking/Lazy)` -> `View Component`
 - **Developer Experience**:
   - **Nuxt 4 Compatibility**: `app/` 디렉토리 기반의 깔끔한 폴더 구조
   - **Auto Import**: Vue, Nuxt, Pinia, UI Components 등 자동 임포트
@@ -20,7 +18,7 @@
 | :---------------- | :------------------------------------------------------------------------------ | :---------------------------------------- |
 | **Core** | [Nuxt 4](https://nuxt.com/)                                                     | Vue Framework (Nuxt 4)     |
 | **State** | [Pinia](https://pinia.vuejs.org/)                                               | Global State Management                   |
-| **Data Fetching** | Nuxt Data Fetching                                                              | `useAsyncData`, `useLazyAsyncData`        |
+| **Data Fetching** | Nuxt Data Fetching                                                              | `$api`, `useApiFetch`        |
 | **HTTP** | [Ofetch](https://github.com/unjs/ofetch)                                        | Fetch API Wrapper (Nuxt 내장 `$fetch`)  |
 | **UI Components** | [Nuxt UI v4](https://ui.nuxt.com/)                                              | Native Vue Components                     |
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com/)                                     | Utility-first CSS framework               |
@@ -35,20 +33,19 @@
 
 ```text
 NUXT-STARTKIT/
-├── app/
-│   ├── api/            # 순수 API 네트워크 통신 함수
-│   ├── components/     # 재사용 가능한 UI 컴포넌트
-│   ├── composables/    # 비즈니스 로직 & Data Fetching (Key Factory 코로케이션)
-│   ├── constants/      # 전역 상수 (routes.ts 등)
-│   ├── layouts/        # 전역 레이아웃 (default, empty)
-│   ├── middleware/     # 네비게이션 가드 (auth.global.ts)
-│   ├── pages/          # 파일 기반 라우팅 페이지
-│   ├── stores/         # Pinia 전역 스토어
-│   ├── utils/          # 공통 유틸리티 함수
-│   └── app.vue         # 최상위 Root Component
-├── public/             # 정적 리소스 (Images, Fonts)
-├── .env                # 환경 변수 (로컬)
-└── nuxt.config.ts      # Nuxt 전역 환경 설정
+app/
+├── components/             # 재사용 가능한 UI 컴포넌트
+├── composables/            # 비즈니스 로직 & Data Fetching (Key Factory 코로케이션)
+│   └── common
+│       └── useApiFetch.ts  # useFetch Wrapper
+├── constants/              # 전역 상수 (routes.ts 등)
+├── layouts/                # 전역 레이아웃 (default, empty)
+├── middleware/             # 네비게이션 가드 (auth.global.ts)
+├── pages/                  # 파일 기반 라우팅 페이지
+├── plugins/
+│   └── api.ts              # $fetch 인스턴스
+├── stores/                 # Pinia 전역 스토어
+└── utils/                  # 공통 유틸리티 함수
 ```
 
 ## 🚀 Getting Started
@@ -85,45 +82,24 @@ pnpm run build
 ## 📖 Architecture Guide
 
 
-### 1. API & Data Fetching (3-Layer Pattern)
+### 1. API & Data Fetching
 
-데이터 흐름을 명확히 하고, 목적(GET vs Mutation)에 따라 `useApiFetch`, `$api`로 분리하여 3단계로 관리합니다.
+데이터 흐름을 명확히 하고, 목적(GET vs Mutation)에 따라 `useApiFetch`, `$api`로 분리하여 관리합니다.
 
 * **`useApiFetch`**: 화면 렌더링을 위한 **GET** 전용 Composable
 * **`$api`**: 사용자 액션에 의한 데이터 변경 **POST/PUT/DELETE** 전용 인스턴스
 
-**Step 1: API 통신 정의 (`app/api/*.ts`)**
-이 계층은 오직 네트워크 요청만 담당합니다.
+**Step 1: 비즈니스 로직 및 Lazy 전략 (`app/composables/*.ts`)**
+캐시 키(Key Factory)는 비즈니스 로직이 위치한 곳과 코로케이션(Co-location)하여 응집도를 높입니다.
+핵심 데이터는 `useApiFetch`로 블로킹하고, 무거운 부가 데이터는 `useApiFetch`의 `lazy` 옵션을 사용합니다.
 
 ```typescript
-// app/api/users.ts
+// app/composables/useUsers.ts
 
 export interface User {
   id: number
   name: string
-  email: string
 }
-
-export const fetchUsers = (page: number) => {
-  return useNuxtApp().$api<User[]>('/users', {
-    query: { page }
-  })
-}
-
-export const createUser = (body: Partial<User>) => {
-  return useNuxtApp().$api<User>('/users', {
-    method: 'POST',
-    body,
-  })
-}
-```
-
-**Step 2: 비즈니스 로직 및 Lazy 전략 (`app/composables/*.ts`)**
-캐시 키(Key Factory)는 비즈니스 로직(`useAsyncData`)이 위치한 곳과 코로케이션(Co-location)하여 응집도를 높입니다.
-핵심 데이터는 `useAsyncData`로 블로킹하고, 무거운 부가 데이터는 `useLazyAsyncData`를 사용합니다.
-
-```typescript
-// app/composables/useUsers.ts
 
 // Key Factory Pattern (캐시 키 중앙 관리 - Composable과 Co-location)
 export const userKeys = {
@@ -133,37 +109,38 @@ export const userKeys = {
 }
 
 export const useUsers = () => {
+  const { $api } = useNuxtApp()
   const page = ref(1)
 
-  // 핵심 데이터 (useAsyncData)
-  const { data: users, refresh: refreshUsers, error: errorUsers } = await useAsyncData(
-    userKeys.all,
-    () => fetchUsers(page.value),
-    { watch: [page] }
-  )
+  // 핵심 데이터
+  const { data: users, refresh: refreshUsers, error: errorUsers } = await useApiFetch<User[]>('/users', {
+    key: userKeys.all,
+    query: { page },
+    watch: [page]
+  })
 
-  // 부가 데이터 (useLazyAsyncData)
-  const { data: stats, status: statsStatus, error: errorStats } = await useLazyAsyncData(
-    userKeys.stats,
-    fetchUserStats
-  )
+  // 부가 데이터
+  const { data: stats, status: statsStatus, error: errorStats } = await useApiFetch('/user-stats', {
+    key: userKeys.stats,
+    lazy: true
+  })
 
   // 액션 로직 (생성 후 캐시 무효화 및 에러 핸들링)
   const addUser = async (payload: Partial<User>) => {
-    try {
-      await createUser(payload)
-      clearNuxtData(userKeys.all) // 캐시 삭제
-      await refreshUsers() // 수동으로 데이터 다시 가져오기
-    } catch (error) {
-      throw error
-    }
+    await $api<User>('/users', {
+      method: 'POST',
+      body: payload
+    })
+    
+    clearNuxtData(userKeys.all) // 캐시 무효화
+    await refreshUsers() // 리스트 갱신
   }
 
   return { page, users, errorUsers, stats, statsStatus, errorStats, addUser }
 }
 ```
 
-**Step 3: 컴포넌트 렌더링 (`app/pages/*.vue`)**
+**Step 2: 컴포넌트 렌더링 (`app/pages/*.vue`)**
 에러 처리가 Composable로 위임되었으므로, 컴포넌트는 오직 정상 데이터 렌더링에만 집중합니다.
 
 ```vue
@@ -223,6 +200,8 @@ definePageMeta({
   name: 'login', // 라우트 이름
   layout: 'empty', // 레이아웃 지정 (기본값: default)
   title: '로그인',
+  isPublic: true, // 로그인 & 비로그인 모두 접근 가능한 페이지에 작성
+  isGuestOnly: true, // 비로그인만 접근 가능한 페이지에 작성
 })
 </script>
 ```
@@ -233,12 +212,12 @@ definePageMeta({
 
 | Type                  | Case       | Example                             |
 | :-------------------- | :--------- | :---------------------------------- |
-| **Component File** | PascalCase | `ConfirmDialog.vue`, `UserProfile.vue`|
-| **Page File** | kebab-case | `index.vue`, `[id].vue`             |
-| **Composable** | camelCase  | `useUsers.ts`, `useConfirm.ts`          |
-| **API Module** | camelCase  | `users.ts`, `auth.ts`               |
+| **Component File**    | PascalCase | `ConfirmDialog.vue`, `UserProfile.vue`|
+| **Page File**         | kebab-case | `index.vue`, `[id].vue`             |
+| **Composable**        | camelCase  | `useUsers.ts`, `useConfirm.ts`      |
 | **Variable/Function** | camelCase  | `handleSubmit`, `isLoading`         |
-| **Interface/Type** | PascalCase | `User`, `LoginPayload`              |
+| **Interface/Type**    | PascalCase | `User`, `LoginPayload`              |
+| **Constant/Enum**     | UPPER_SNAKE| `ROUTE_NAMES`                       |
 
 ---
 

@@ -2,14 +2,8 @@ import { defineEventHandler, readBody, setCookie, createError } from 'h3'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  console.log(body)
 
   const { email, password } = body
-
-  // const response = await $fetch('api/login', {
-  //   method: 'POST',
-  //   body: { email, password }
-  // })
 
   await new Promise(resolve => setTimeout(resolve, 500))
 
@@ -20,15 +14,15 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const newAccessToken = 'mock-access-token-' + Date.now()
-  const newRefreshToken = 'mock-refresh-token-' + Date.now()
+  const accessToken = 'mock-access-token-' + Date.now()
+  const refreshToken = 'mock-refresh-token-' + Date.now()
   const user = {
     name: 'Juny Jo',
     email: email,
     role: 'Admin'
   }
 
-  setCookie(event, 'refreshToken', newRefreshToken, {
+  setCookie(event, 'refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -37,7 +31,7 @@ export default defineEventHandler(async (event) => {
   })
 
   return {
-    accessToken: newAccessToken,
-    user: user
+    accessToken,
+    user
   }
 })

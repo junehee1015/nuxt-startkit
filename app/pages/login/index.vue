@@ -4,7 +4,7 @@ import { z } from 'zod'
 definePageMeta({
   name: 'login',
   layout: 'empty',
-  isPublic: true
+  isGuestOnly: true
 })
 
 useSeoMeta({ title: '로그인' })

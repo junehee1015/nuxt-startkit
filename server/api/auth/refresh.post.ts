@@ -11,12 +11,6 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // 실제 API 갱신 요청
-    // const response = await $fetch('api/refresh', {
-    //   method: 'POST',
-    //   body: { refreshToken }
-    // })
-
     await new Promise(resolve => setTimeout(resolve, 500))
     const newAccessToken = 'mock-new-access-token-' + Date.now()
     const newRefreshToken = 'mock-new-refresh-token-' + Date.now()
