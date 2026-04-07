@@ -23,7 +23,7 @@ const userMenuItems = [
     { label: '설정', icon: 'i-lucide-settings' }
   ],
   [
-    { label: '로그아웃', icon: 'i-lucide-log-out', color: 'error', onSelect: () => excuteLogout() }
+    { label: '로그아웃', icon: 'i-lucide-log-out', color: 'error' as const, onSelect: () => excuteLogout() }
   ]
 ]
 
