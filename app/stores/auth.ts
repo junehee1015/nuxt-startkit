@@ -10,9 +10,11 @@ export const useAuthStore = defineStore(
     const accessToken = ref<string | null>(null)
     const user = ref<User | null>(null)
 
-    const setAuthData = (token: string, userData = user.value) => {
+    const setAuthData = (token: string, userData?: User) => {
       accessToken.value = token
-      user.value = userData
+
+      if (userData)
+        user.value = userData
     }
 
     const clearAuthData = () => {
@@ -30,8 +32,9 @@ export const useAuthStore = defineStore(
     persist: {
       pick: ['user'],
       storage: piniaPluginPersistedstate.cookies({
-        maxAge: 60 * 60 * 24 * 30, // 30일 유지
-        sameSite: 'lax'
+        maxAge: 60 * 60 * 24, // 24시간 유지
+        sameSite: 'lax',
+        secure: import.meta.env.PROD
       })
     }
   }

@@ -74,23 +74,24 @@ export default defineNuxtPlugin((nuxtApp) => {
     // baseURL: config.public.apiUrl as string,
     baseURL: config.public.mockUrl as string, // Mock URL
     onRequest({ options }) {
+      options.headers = new Headers(options.headers)
+
       if (import.meta.server && ssrCookie) {
-        options.headers = new Headers(options.headers)
         options.headers.set('cookie', ssrCookie)
       }
 
       if (authStore.accessToken) {
-        options.headers = new Headers(options.headers)
         options.headers.set('Authorization', `Bearer ${authStore.accessToken}`)
       }
     }
   })
 
   const api = async <T = unknown>(request: FetchRequest, options?: FetchOptions): Promise<T> => {
-    const requestToPerform = request instanceof Request ? request.clone() : request
+    const getCloneRequest = () => (request instanceof Request ? request.clone() : request)
+    const getCloneOptions = () => (options ? { ...options } : undefined)
 
     try {
-      return await _api<T>(requestToPerform, options)
+      return await _api<T>(getCloneRequest(), getCloneOptions())
     } catch (e: unknown) {
       const error = e as FetchError
 
@@ -106,8 +107,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           throw refreshError
         }
 
-        const retryRequest = request instanceof Request ? request.clone() : request
-        return await _api<T>(retryRequest, options)
+        return await _api<T>(getCloneRequest(), getCloneOptions())
       }
 
       throw error
