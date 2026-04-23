@@ -7,8 +7,8 @@ export interface User {
 export const useAuthStore = defineStore(
   'auth',
   () => {
-    const accessToken = ref<string | null>(null)
     const user = ref<User | null>(null)
+    const accessToken = ref<string | null>(null)
 
     const setAuthData = (token: string, userData?: User) => {
       accessToken.value = token
@@ -22,11 +22,46 @@ export const useAuthStore = defineStore(
       user.value = null
     }
 
+    const clearSession = () => {
+      clearAuthData()
+      clearNuxtData()
+    }
+
+    let logoutPromise: Promise<void> | null = null
+
+    const logout = async () => {
+      if (logoutPromise) return logoutPromise
+
+      const nuxtApp = useNuxtApp()
+
+      logoutPromise = (async () => {
+        try {
+          await $fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+          })
+        } catch {
+          console.warn('Server logout failed.')
+        } finally {
+          clearSession()
+
+          await nuxtApp.runWithContext(async () => {
+            if (useRoute().path !== '/login') await navigateTo('/login', { replace: true })
+          })
+
+          logoutPromise = null
+        }
+      })()
+
+      return logoutPromise
+    }
+
     return {
       user,
       accessToken,
       setAuthData,
-      clearAuthData
+      clearSession,
+      logout
     }
   }, {
     persist: {
