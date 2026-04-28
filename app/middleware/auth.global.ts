@@ -1,4 +1,17 @@
 export default defineNuxtRouteMiddleware(async (to) => {
+  const accessToken = useCookie('accessToken')
+  const refreshToken = useCookie('refreshToken')
+
+  if (!accessToken.value && refreshToken.value) {
+    try {
+      await $fetch('/api/refresh', { method: 'POST' })
+    } catch {
+      if (to.name !== ROUTE_NAMES.LOGIN) {
+        return navigateTo({ name: ROUTE_NAMES.LOGIN, replace: true })
+      }
+    }
+  }
+
   const authStore = useAuthStore()
 
   const hasUser = !!authStore.user
@@ -12,5 +25,5 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (isPublic) return
 
-  if (!hasUser) return navigateTo({ name: ROUTE_NAMES.LOGIN })
+  if (!hasUser) return navigateTo({ name: ROUTE_NAMES.LOGIN, replace: true })
 })
