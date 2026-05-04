@@ -49,7 +49,6 @@ export default defineEventHandler(async (event) => {
     })
 
     return {
-      accessToken,
       user
     }
   } catch (e: unknown) {

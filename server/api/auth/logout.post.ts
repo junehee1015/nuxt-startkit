@@ -8,7 +8,6 @@ export default defineEventHandler(async (event) => {
   //   try {
   //     await $fetch(`${config.public.apiUrl}/auth/logout`, {
   //       method: 'POST',
-  //       headers: { Authorization: `Bearer ${accessToken}` }
   //     })
   //   } catch {
   //     console.warn('logout api failed')

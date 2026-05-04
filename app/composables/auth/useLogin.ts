@@ -4,7 +4,6 @@ interface LoginPayload {
 }
 
 interface LoginResponse {
-  accessToken: string
   email: string
   user: User
 }
@@ -26,7 +25,7 @@ export const useLogin = () => {
         body: loginPayload
       })
 
-      authStore.setAuthData(response.accessToken, response.user)
+      authStore.setAuthData(response.user)
     } finally {
       pending.value = false
     }

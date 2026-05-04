@@ -8,17 +8,13 @@ export const useAuthStore = defineStore(
   'auth',
   () => {
     const user = ref<User | null>(null)
-    const accessToken = ref<string | null>(null)
 
-    const setAuthData = (token: string, userData?: User) => {
-      accessToken.value = token
-
+    const setAuthData = (userData?: User) => {
       if (userData)
         user.value = userData
     }
 
     const clearAuthData = () => {
-      accessToken.value = null
       user.value = null
     }
 
@@ -58,7 +54,6 @@ export const useAuthStore = defineStore(
 
     return {
       user,
-      accessToken,
       setAuthData,
       clearSession,
       logout
