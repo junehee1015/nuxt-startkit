@@ -14,12 +14,8 @@ export const useAuthStore = defineStore(
         user.value = userData
     }
 
-    const clearAuthData = () => {
-      user.value = null
-    }
-
     const clearSession = () => {
-      clearAuthData()
+      user.value = null
       clearNuxtData()
     }
 
@@ -64,7 +60,8 @@ export const useAuthStore = defineStore(
       storage: piniaPluginPersistedstate.cookies({
         maxAge: 60 * 60 * 24, // 24시간 유지
         sameSite: 'lax',
-        secure: import.meta.env.PROD
+        secure: import.meta.env.PROD,
+        path: '/'
       })
     }
   }

@@ -1,6 +1,4 @@
-import type { FetchError } from 'ofetch'
-
-let refreshPromise: Promise<string> | null = null
+const refreshLocks = new Map<string, Promise<string | null>>()
 
 export default defineEventHandler(async (event) => {
   const method = (event.node.req.method || 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS'
@@ -10,25 +8,32 @@ export default defineEventHandler(async (event) => {
   const path = event.context.params?.path || ''
   const targetUrl = `${config.public.apiUrl}/${path}`
 
+  const proxyHeaders = new Headers(getHeaders(event) as HeadersInit)
+  proxyHeaders.delete('host') // 라우팅 오류 방지
+  proxyHeaders.delete('cookie') // 원본 쿠키 유출 방지
+
   const accessToken = getCookie(event, 'accessToken')
-  const proxyHeaders = new Headers()
-  const requestHeaders = getHeaders(event)
-
-  if (requestHeaders['content-type']) proxyHeaders.set('Content-Type', requestHeaders['content-type'])
-  if (requestHeaders['accept']) proxyHeaders.set('Accept', requestHeaders['accept'])
-
   if (accessToken) proxyHeaders.set('Authorization', `Bearer ${accessToken}`)
 
-  const hasBody = !['GET', 'HEAD'].includes(method)
-  const body = hasBody ? await readRawBody(event) : undefined
+  const contentType = proxyHeaders.get('content-type') || ''
+  const isMultipart = contentType.includes('multipart/form-data')
+  const hasBody = !['GET', 'HEAD', 'OPTIONS'].includes(method)
+
+  let requestBody = null
+
+  if (hasBody) {
+    // 파일 업로드는 Node 스트림(req) 그대로 바이패스, 일반 데이터는 재시도를 위해 RAM 버퍼링
+    requestBody = isMultipart ? event.node.req : await readRawBody(event)
+  }
 
   const sendRequest = (currentHeaders: Headers) => {
     return $fetch.raw(targetUrl, {
       method,
       headers: currentHeaders,
-      body,
+      body: requestBody,
       query: getQuery(event),
-      ignoreResponseError: true
+      ignoreResponseError: true,
+      duplex: (hasBody && isMultipart) ? 'half' : undefined
     })
   }
 
@@ -38,23 +43,30 @@ export default defineEventHandler(async (event) => {
     const refreshToken = getCookie(event, 'refreshToken')
 
     if (refreshToken) {
-      try {
-        if (!refreshPromise) {
-          refreshPromise = (async () => {
+      if (!refreshLocks.has(refreshToken)) {
+        const refreshPromise = (async () => {
+          try {
             // const refreshResponse = await $fetch<{ accessToken: string }>(`${config.public.apiUrl}/auth/refresh`, {
             //   method: 'POST',
-            //   headers: { Cookie: `refreshToken=${refreshToken}` }
+            //   headers: { 'Content-Type': 'application/json' },
+            //   body: { refreshToken }
             // })
             // return refreshResponse.accessToken
             await new Promise(resolve => setTimeout(resolve, 500))
             return 'mock-new-access-token-' + Date.now()
-          })().finally(() => {
-            refreshPromise = null
-          })
-        }
+          } catch {
+            return null
+          } finally {
+            refreshLocks.delete(refreshToken)
+          }
+        })()
 
-        const newAccessToken = await refreshPromise
+        refreshLocks.set(refreshToken, refreshPromise)
+      }
 
+      const newAccessToken = await refreshLocks.get(refreshToken)
+
+      if (newAccessToken) {
         setCookie(event, 'accessToken', newAccessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -65,16 +77,10 @@ export default defineEventHandler(async (event) => {
 
         proxyHeaders.set('Authorization', `Bearer ${newAccessToken}`)
         response = await sendRequest(proxyHeaders)
-      } catch (e: unknown) {
-        const error = e as FetchError
-
-        deleteCookie(event, 'accessToken')
-        deleteCookie(event, 'refreshToken')
-
-        throw createError({
-          statusCode: error.response?.status || 401,
-          statusMessage: error.data?.message || 'Session Expired'
-        })
+      } else {
+        deleteCookie(event, 'accessToken', { path: '/' })
+        deleteCookie(event, 'refreshToken', { path: '/' })
+        throw createError({ statusCode: 401, statusMessage: 'Session Expired' })
       }
     } else {
       throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })

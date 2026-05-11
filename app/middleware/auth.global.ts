@@ -1,18 +1,46 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  const accessToken = useCookie('accessToken')
-  const refreshToken = useCookie('refreshToken')
+  const authStore = useAuthStore()
 
-  if (!accessToken.value && refreshToken.value) {
-    try {
-      await $fetch('/api/refresh', { method: 'POST' })
-    } catch {
-      if (to.name !== ROUTE_NAMES.LOGIN) {
-        return navigateTo({ name: ROUTE_NAMES.LOGIN, replace: true })
+  if (import.meta.server) {
+    const accessToken = useCookie('accessToken')
+    const refreshToken = useCookie('refreshToken')
+    const userCookie = useCookie('auth')
+
+    if ((!accessToken.value && !refreshToken.value) || !userCookie.value) {
+      authStore.user = null
+      accessToken.value = null
+      refreshToken.value = null
+      userCookie.value = null
+      clearNuxtData()
+    }
+
+    if (userCookie.value) {
+      authStore.user = typeof userCookie.value === 'string'
+        ? JSON.parse(decodeURIComponent(userCookie.value))
+        : userCookie.value
+    } else {
+      authStore.user = null
+      accessToken.value = null
+      refreshToken.value = null
+      userCookie.value = null
+      clearNuxtData()
+    }
+
+    if (!accessToken.value && refreshToken.value && authStore.user) {
+      try {
+        // const headers = useRequestHeaders(['cookie']) as Record<string, string>
+        // await $fetch('/api/refresh', { method: 'POST', headers })
+        await new Promise(resolve => setTimeout(resolve, 500))
+        accessToken.value = 'mock-new-access-token-' + Date.now()
+      } catch {
+        authStore.user = null
+        accessToken.value = null
+        refreshToken.value = null
+        userCookie.value = null
+        clearNuxtData()
       }
     }
   }
-
-  const authStore = useAuthStore()
 
   const hasUser = !!authStore.user
   const isPublic = to.meta.isPublic === true // 로그인 & 비로그인 모두 접근 가능
